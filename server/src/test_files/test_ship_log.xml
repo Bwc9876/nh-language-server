@@ -1,0 +1,77 @@
+<AstroObjectEntry xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/Outer-Wilds-New-Horizons/new-horizons/main/NewHorizons/Schemas/shiplog_schema.xsd">
+    <ID>EXAMPLE_PLANET</ID> <!-- The ID of the planet this xml file is for -->
+
+    <Entry> <!-- An Entry For This Planet -->
+        <ID>EXAMPLE_ENTRY</ID> <!-- The ID of this entry -->
+        <Name>Example Planet</Name> <!-- The name to show for this entry both on the card and in map mode -->
+        <Curiosity>EXAMPLE_ENTRY</Curiosity> <!-- The curiosity this entry belongs to (optional) in this case, it
+        belongs to itself -->
+        <IsCuriosity /> <!-- Marks this entry as a curiosity, makes it bigger in rumor mode and
+        allows custom colors -->
+        <IgnoreMoreToExplore /> <!-- Don't show a "more to explore" icon -->
+        <AltPhotoCondition>EXAMPLE_EXPLORE_FACT</AltPhotoCondition> <!-- Show an alternate picture if a fact is known -->
+
+        <RumorFact> <!-- A rumor fact that belongs to this entry -->
+            <ID>EXAMPLE_RUMOR_FACT</ID> <!-- The ID of this fact -->
+            <RumorName>Cool Rock RUMOR</RumorName> <!-- The name of the rumor this fact relates to -->
+            <Text>Example Rumor Text</Text> <!-- The Text to display for this fact -->
+        </RumorFact>
+
+        <ExploreFact> <!-- An explore fact that belongs to this entry -->
+            <ID>EXAMPLE_EXPLORE_FACT</ID> <!-- The ID of this fact -->
+            <Text>Example Explore Fact <![CDATA[<color=orange>This is orange</color>]]></Text> <!-- The Text to display for this fact, notice how you can use color just
+            like in dialogue -->
+            <AltText> <!-- Text to display for this fact if another fact is known -->
+                <Text><![CDATA[<color=blue>Different Text To Display</color>]]></Text> <!-- The text to display -->
+                <Condition>EXAMPLE_CHILD_RUMOR_FACT</Condition> <!-- The fact that needs to be known to make this text
+                display -->
+            </AltText>
+        </ExploreFact>
+
+        <Entry> <!-- Makes a child of this entry (displays smaller in rumor mode and indented in map
+            mode) -->
+            <ID>EXAMPLE_CHILD_ENTRY</ID> <!-- The ID of this child entry -->
+            <Name>Example Child Entry</Name> <!-- The name of this child entry -->
+            <Curiosity>EXAMPLE_ENTRY</Curiosity> <!-- The curiosity of this child entry -->
+
+            <!-- Create some facts for this child entry -->
+            <RumorFact>
+                <ID>EXAMPLE_CHILD_RUMOR_FACT</ID>
+                <RumorName>Example Child Rumor Fact</RumorName>
+                <Text>Example Child Rumor Fact Text</Text>
+            </RumorFact>
+
+            <ExploreFact>
+                <ID>EXAMPLE_CHILD_EXPLORE_FACT</ID>
+                <Text>Example Child Explore Fact Text</Text>
+            </ExploreFact>
+        </Entry>
+    </Entry>
+
+    <Entry> <!-- Create another entry -->
+        <ID>EXAMPLE_ENTRY_2</ID> <!-- Make sure IDs are unique! -->
+        <Name>Example Entry 2</Name>
+        <Curiosity>EXAMPLE_ENTRY</Curiosity> <!-- Set this entry's curiosity to the other one we defined -->
+        <IgnoreMoreToExploreCondition>EXAMPLE_EXPLORE_FACT_2</IgnoreMoreToExploreCondition> <!-- Don't show a more to
+        explore icon if a fact is known -->
+
+        <!-- Make some facts for this second entry -->
+        <RumorFact>
+            <ID>EXAMPLE_RUMOR_FACT_2</ID>
+            <SourceID>EXAMPLE_ENTRY</SourceID> <!-- Set SourceID to connect a line from one entry to another -->
+            <RumorName>Example Rumor Fact 2</RumorName>
+            <Text>Example Rumor Fact 2</Text>
+        </RumorFact>
+
+        <ExploreFact>
+            <ID>EXAMPLE_EXPLORE_FACT_2</ID>
+            <Text>Example Explore Fact 2</Text>
+        </ExploreFact>
+
+        <ExploreFact>
+            <ID>EXAMPLE_EXPLORE_FACT_3</ID>
+            <Text>Example Explore Fact 3</Text>
+        </ExploreFact>
+    </Entry>
+</AstroObjectEntry>

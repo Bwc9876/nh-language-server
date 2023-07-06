@@ -30,7 +30,7 @@ async function activateServer() {
 
     const clientOptions: LanguageClientOptions = {
         outputChannel: window.createOutputChannel("New Horizons Language Server"),
-        documentSelector: [{ language: 'xml' }],
+        documentSelector: [{ language: 'xml' }, { language: 'json' }],
         synchronize: {
             fileEvents: workspace.createFileSystemWatcher("**"),
         }

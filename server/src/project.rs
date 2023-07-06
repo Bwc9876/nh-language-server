@@ -1,4 +1,8 @@
-use std::{fs, path::Path, time::Instant};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    time::Instant,
+};
 
 use glob::glob;
 use lsp_types::{Url, VersionedTextDocumentIdentifier};
@@ -25,6 +29,8 @@ type ProjectFiles = Vec<ProjectFile>;
 
 #[derive(Default, Debug)]
 pub struct Project {
+    pub root_path: PathBuf,
+
     pub planet_files: ProjectFiles,
     pub system_files: ProjectFiles,
     pub ship_log_files: ProjectFiles,
@@ -139,6 +145,8 @@ impl Project {
     // Props/remotes/*/whiteboard/nomaiText/xmlFile
 
     pub fn load_from(&mut self, path: &Path) {
+        self.root_path = path.to_owned();
+
         eprintln!("Begin Project Discovery");
 
         let now = Instant::now();

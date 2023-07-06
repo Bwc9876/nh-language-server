@@ -6,20 +6,29 @@ use lsp_types::{
     Diagnostic, PublishDiagnosticsParams, Url, VersionedTextDocumentIdentifier,
 };
 
-use crate::{project::Project, ship_log::ShipLogValidator};
+use crate::{file_paths::FilePathValidator, project::Project, ship_log::ShipLogValidator};
 
 pub type ErrorSet = Vec<(VersionedTextDocumentIdentifier, Diagnostic)>;
 
 pub trait Validator {
+    fn prepare() -> Self
+    where
+        Self: Sized;
     fn should_invalidate(&self, changed_paths: &Vec<Url>, project: &Project) -> bool;
     fn validate(&self, project: &Project) -> ErrorSet;
 }
 
-pub struct MainValidator();
+#[derive(Default)]
+pub struct MainValidator {
+    pub validators: Vec<Box<dyn Validator>>,
+}
 
 impl MainValidator {
-    fn get_validators() -> Vec<impl Validator> {
-        vec![ShipLogValidator()]
+    pub fn new() -> Self {
+        let mut this = Self::default();
+        this.validators.push(Box::new(ShipLogValidator::prepare()));
+        this.validators.push(Box::new(FilePathValidator::prepare()));
+        this
     }
 
     fn internal_emit(connection: &Connection, current_buffer: &ErrorSet) {
@@ -59,9 +68,8 @@ impl MainValidator {
     pub fn force_validate(&self, connection: &Connection, project: &mut Project) {
         let now = Instant::now();
 
-        let validators = Self::get_validators();
         let mut errors: ErrorSet = vec![];
-        for validator in validators {
+        for validator in &self.validators {
             errors.extend(validator.validate(project).into_iter());
         }
 
@@ -87,9 +95,9 @@ impl MainValidator {
         changed_paths: Vec<Url>,
         project: &mut Project,
     ) {
-        let validators = Self::get_validators();
         let mut errors: ErrorSet = vec![];
-        for validator in validators
+        for validator in self
+            .validators
             .iter()
             .filter(|v| v.should_invalidate(&changed_paths, project))
         {

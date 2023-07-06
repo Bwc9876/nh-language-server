@@ -22086,7 +22086,7 @@ async function activateServer() {
     };
     const clientOptions = {
         outputChannel: vscode_1.window.createOutputChannel("New Horizons Language Server"),
-        documentSelector: [{ language: 'xml' }],
+        documentSelector: [{ language: 'xml' }, { language: 'json' }],
         synchronize: {
             fileEvents: vscode_1.workspace.createFileSystemWatcher("**"),
         }

@@ -1,23 +1,17 @@
 use anyhow::Result;
-use lsp_types::{
-    Diagnostic, DiagnosticSeverity, Position, Range, Url, VersionedTextDocumentIdentifier,
-};
-use roxmltree::{Document, Node, TextPos};
+use lsp_types::{Diagnostic, DiagnosticSeverity, Range, Url, VersionedTextDocumentIdentifier};
+use roxmltree::{Document, Node};
 
 use crate::{
     project::Project,
-    utils::error_codes::{self, get_error_code},
+    utils::{
+        error_codes::{self, get_error_code},
+        xml_range_to_diag_range,
+    },
     validation::{ErrorSet, Validator},
 };
 
 type ShipLogFile = VersionedTextDocumentIdentifier;
-
-fn xml_range_to_diag_range(start_pos: TextPos, end_pos: TextPos) -> Range {
-    Range::new(
-        Position::new(start_pos.row - 1, start_pos.col - 1),
-        Position::new(end_pos.row - 1, end_pos.col - 1),
-    )
-}
 
 #[derive(Clone, Debug)]
 struct ID {
@@ -217,6 +211,10 @@ impl ShipLogContext {
 pub struct ShipLogValidator();
 
 impl Validator for ShipLogValidator {
+    fn prepare() -> Self {
+        Self()
+    }
+
     fn should_invalidate(&self, changed_paths: &Vec<Url>, project: &Project) -> bool {
         project
             .ship_log_files
@@ -238,7 +236,7 @@ impl Validator for ShipLogValidator {
 
 #[cfg(test)]
 mod tests {
-    use lsp_types::Url;
+    use lsp_types::{Position, Url};
 
     use super::*;
 

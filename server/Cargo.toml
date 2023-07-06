@@ -8,8 +8,10 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.71"
 glob = "0.3.1"
+json-position-parser = "0.0.11"
 lsp-server = "0.7.1"
 lsp-types = "0.94.0"
+reqwest = { version = "0.11.18", features = ["blocking"] }
 roxmltree = "0.18.0"
 serde = "1.0.156"
 serde_json = "1.0.99"

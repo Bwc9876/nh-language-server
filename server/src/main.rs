@@ -14,6 +14,7 @@ use validation::MainValidator;
 
 use crate::project::Project;
 
+mod file_paths;
 mod project;
 mod ship_log;
 mod utils;
@@ -21,7 +22,7 @@ mod validation;
 
 fn main_loop(connection: Connection, params: Value) -> Result<()> {
     let params: InitializeParams = serde_json::from_value(params).unwrap();
-    let validator = MainValidator();
+    let validator = MainValidator::new();
     if let Some(root_uri) = params.root_uri {
         let mut project = Project::default();
         project.load_from(&PathBuf::from(root_uri.path()));

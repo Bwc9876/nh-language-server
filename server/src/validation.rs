@@ -75,8 +75,10 @@ impl MainValidator {
 
         let len = errors.len();
 
-        project.files_with_diagnostics =
-            errors.iter().map(|e| e.0.uri.clone()).collect::<Vec<Url>>();
+        project.files_with_diagnostics = errors
+            .iter()
+            .map(|e| e.0.clone())
+            .collect::<Vec<VersionedTextDocumentIdentifier>>();
 
         project.files_with_diagnostics.dedup();
 
@@ -107,15 +109,20 @@ impl MainValidator {
         let mut uris_with_diagnostics =
             errors.iter().map(|e| e.0.uri.clone()).collect::<Vec<Url>>();
 
+        uris_with_diagnostics.sort();
         uris_with_diagnostics.dedup();
 
         self.emit_diagnostics(connection, errors);
 
-        for uri in changed_paths.iter() {
-            if !uris_with_diagnostics.contains(uri) {
+        for file in project.iter_all() {
+            if !uris_with_diagnostics.contains(&file.id.uri) {
                 let params = PublishDiagnosticsParams {
-                    uri: uri.clone(),
-                    version: None,
+                    uri: file.id.uri.clone(),
+                    version: project
+                        .files_with_diagnostics
+                        .iter()
+                        .find(|f| f.uri == file.id.uri)
+                        .map(|f| f.version),
                     diagnostics: vec![],
                 };
                 let res = connection
@@ -132,6 +139,6 @@ impl MainValidator {
 
         project
             .files_with_diagnostics
-            .retain(|f| !changed_paths.contains(f) || uris_with_diagnostics.contains(f));
+            .retain(|f| !changed_paths.contains(&f.uri) || uris_with_diagnostics.contains(&f.uri));
     }
 }

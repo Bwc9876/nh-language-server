@@ -1,9 +1,10 @@
 use anyhow::Result;
 use lsp_types::{Diagnostic, DiagnosticSeverity, Range, Url, VersionedTextDocumentIdentifier};
 use roxmltree::{Document, Node};
+use serde_json::Value;
 
 use crate::{
-    project::Project,
+    project::{Project, ProjectFile},
     utils::{
         error_codes::{self, get_error_code},
         xml_range_to_diag_range,
@@ -140,17 +141,40 @@ impl ShipLogContext {
         }
     }
 
-    fn validate_curiosity_references(&self, errors: &mut ErrorSet) {
+    fn validate_curiosity_references(
+        &self,
+        system_files: &Vec<ProjectFile>,
+        errors: &mut ErrorSet,
+    ) {
         // TODO: Fill this out
         const KNOWN_CURIOSITIES: [&str; 0] = [];
 
-        let flattened_entry_ids: Vec<&String> = self.entry_ids.iter().map(|i| &i.value).collect();
+        let mut custom_curiosities: Vec<String> = vec![];
+
+        // Technically speaking I should only be checking the system that that uses this ship log file,
+        // but that's a lot more difficult and time-consuming than this and that type of error shouldn't happen often.
+        for file in system_files.iter() {
+            if let Ok(contents) = serde_json::from_str::<Value>(&file.contents) {
+                if let Some(Some(values)) = contents.get("curiosities").map(|v| v.as_array()) {
+                    custom_curiosities.extend(
+                        values
+                            .iter()
+                            .filter_map(|v| v.get("id"))
+                            .filter_map(|v| v.as_str())
+                            .map(|s| s.to_string()),
+                    );
+                }
+            }
+        }
 
         for reference in self.curiosity_references.iter() {
             if !KNOWN_CURIOSITIES.contains(&reference.value.as_str())
-                && !flattened_entry_ids.contains(&&reference.value)
+                && !custom_curiosities.contains(&&reference.value)
             {
-                let message = format!("Unknown Curiosity: `{}`", reference.value);
+                let message = format!(
+                    "Unknown Curiosity: `{}`. Please define it in a system config",
+                    reference.value
+                );
                 errors.push((
                     reference.source_file.clone(),
                     Diagnostic {
@@ -193,14 +217,14 @@ impl ShipLogContext {
         }
     }
 
-    pub fn validate(&self) -> ErrorSet {
+    pub fn validate(&self, project: &Project) -> ErrorSet {
         let mut errors: ErrorSet = vec![];
 
         self.validate_id_set_duplicates(&mut errors, &self.astro_object_ids);
         self.validate_id_set_duplicates(&mut errors, &self.entry_ids);
         self.validate_id_set_duplicates(&mut errors, &self.fact_ids);
 
-        self.validate_curiosity_references(&mut errors);
+        self.validate_curiosity_references(&project.system_files, &mut errors);
         self.validate_source_ids(&mut errors);
 
         errors
@@ -230,15 +254,36 @@ impl Validator for ShipLogValidator {
                 eprintln!("Error parsing ship log file: {why:?}");
             }
         }
-        ctx.validate()
+        ctx.validate(project)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use lsp_types::{Position, Url};
+    use serde_json::json;
 
     use super::*;
+
+    fn get_test_file() -> Vec<ProjectFile> {
+        let contents = json!({
+            "curiosities": [{
+                "id": "EXAMPLE_ENTRY"
+            }]
+        });
+        let new_file = ProjectFile::new(
+            Url::parse("file://test_system.json").unwrap(),
+            0,
+            serde_json::to_string(&contents).unwrap(),
+        );
+        vec![new_file]
+    }
+
+    fn get_test_project() -> Project {
+        let mut proj = Project::default();
+        proj.system_files = get_test_file();
+        proj
+    }
 
     #[test]
     fn test_parse_example() {
@@ -282,7 +327,7 @@ mod tests {
 
         ctx.parse(&test_file, TEST_STR).unwrap();
 
-        let errors = ctx.validate();
+        let errors = ctx.validate(&get_test_project());
 
         assert_eq!(errors.len(), 6);
         assert_eq!(
@@ -318,10 +363,13 @@ mod tests {
 
         ctx.parse(&test_file, TEST_STR).unwrap();
 
-        let errors = ctx.validate();
+        let errors = ctx.validate(&get_test_project());
 
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].1.message, "Unknown Curiosity: `COOL_ROCK`");
+        assert_eq!(
+            errors[0].1.message,
+            "Unknown Curiosity: `COOL_ROCK`. Please define it in a system config"
+        );
     }
 
     #[test]
@@ -334,7 +382,7 @@ mod tests {
 
         ctx.parse(&test_file, TEST_STR).unwrap();
 
-        let errors = ctx.validate();
+        let errors = ctx.validate(&get_test_project());
 
         assert_eq!(errors.len(), 1);
         assert_eq!(errors[0].1.message, "Unknown Entry: `GABAGOOL`");

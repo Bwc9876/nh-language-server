@@ -36,7 +36,7 @@ pub struct Project {
     pub ship_log_files: ProjectFiles,
     pub dialogue_files: ProjectFiles,
     pub text_files: ProjectFiles,
-    pub files_with_diagnostics: Vec<Url>,
+    pub files_with_diagnostics: Vec<VersionedTextDocumentIdentifier>,
 }
 
 impl Project {
@@ -140,10 +140,6 @@ impl Project {
         }
     }
 
-    // TODO: Nomai Text Loading, don't feel like it rn
-    // Props/translatorText/*/xmlFile
-    // Props/remotes/*/whiteboard/nomaiText/xmlFile
-
     pub fn load_from(&mut self, path: &Path) {
         self.root_path = path.to_owned();
 
@@ -189,6 +185,19 @@ impl Project {
         false
     }
 
+    fn check_file_remove(files: &mut ProjectFiles, url: &Url) -> bool {
+        for file in files.iter_mut() {
+            if url == &file.id.uri {
+                file.id.version = 0;
+                if let Ok(contents) = fs::read_to_string(url.path()) {
+                    file.contents = contents;
+                }
+                return true;
+            }
+        }
+        false
+    }
+
     pub fn open_file(&mut self, id: VersionedTextDocumentIdentifier, contents: &str) {
         for files in [
             &mut self.dialogue_files,
@@ -201,5 +210,28 @@ impl Project {
                 break;
             }
         }
+    }
+
+    pub fn close_file(&mut self, url: &Url) {
+        for files in [
+            &mut self.dialogue_files,
+            &mut self.ship_log_files,
+            &mut self.system_files,
+            &mut self.planet_files,
+            &mut self.text_files,
+        ] {
+            if Self::check_file_remove(files, url) {
+                break;
+            }
+        }
+    }
+
+    pub fn iter_all(&self) -> impl Iterator<Item = &ProjectFile> {
+        self.planet_files
+            .iter()
+            .chain(&self.system_files)
+            .chain(&self.ship_log_files)
+            .chain(&self.dialogue_files)
+            .chain(&self.text_files)
     }
 }

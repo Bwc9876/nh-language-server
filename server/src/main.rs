@@ -3,11 +3,12 @@ use std::path::PathBuf;
 use anyhow::Result;
 use lsp_server::{Connection, Message};
 use lsp_types::{
-    notification::{DidChangeTextDocument, DidOpenTextDocument, Notification},
-    DidChangeTextDocumentParams, DidOpenTextDocumentParams, InitializeParams, OneOf,
-    PositionEncodingKind, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
-    VersionedTextDocumentIdentifier, WorkspaceFoldersServerCapabilities,
-    WorkspaceServerCapabilities,
+    notification::{
+        DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification,
+    },
+    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    InitializeParams, PositionEncodingKind, ServerCapabilities, TextDocumentSyncKind,
+    VersionedTextDocumentIdentifier,
 };
 use serde_json::Value;
 use validation::MainValidator;
@@ -58,12 +59,19 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
                         let params: DidChangeTextDocumentParams =
                             serde_json::from_value(not.params).unwrap();
                         project.open_file(
-                            VersionedTextDocumentIdentifier::new(
-                                params.text_document.uri.clone(),
-                                params.text_document.version,
-                            ),
+                            params.text_document.clone(),
                             &params.content_changes.first().unwrap().text,
                         );
+                        validator.on_change(
+                            &connection,
+                            vec![params.text_document.uri],
+                            &mut project,
+                        );
+                    }
+                    DidCloseTextDocument::METHOD => {
+                        let params: DidCloseTextDocumentParams =
+                            serde_json::from_value(not.params).unwrap();
+                        project.close_file(&params.text_document.uri);
                         validator.on_change(
                             &connection,
                             vec![params.text_document.uri],
@@ -84,15 +92,8 @@ pub fn main() -> Result<()> {
     let mut capabilities = ServerCapabilities::default();
 
     capabilities.position_encoding = Some(PositionEncodingKind::UTF16);
-    capabilities.workspace = Some(WorkspaceServerCapabilities {
-        workspace_folders: Some(WorkspaceFoldersServerCapabilities {
-            supported: Some(true),
-            change_notifications: Some(OneOf::Left(true)),
-        }),
-        file_operations: None,
-    });
-    capabilities.text_document_sync =
-        Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL));
+    capabilities.workspace = None;
+    capabilities.text_document_sync = Some(TextDocumentSyncKind::FULL.into());
 
     let server_capabilities = serde_json::to_value(capabilities).unwrap();
     let initialization_params = connection.initialize(server_capabilities)?;

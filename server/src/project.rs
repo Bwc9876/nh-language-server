@@ -44,15 +44,23 @@ impl Project {
         let raw_url = format!("file://{}", path.to_str().unwrap());
         let url = Url::parse(&raw_url);
 
-        if let Ok(url) = url {
-            let contents = fs::read_to_string(path);
+        eprintln!("Attempt read {}", path.to_str().unwrap());
 
-            match contents {
-                Ok(contents) => files.push(ProjectFile::new(url, 0, contents)),
-                Err(why) => {
-                    eprintln!("Failed to read {raw_url}: {why:?}");
+        match url {
+            Ok(url) => {
+                let contents = fs::read_to_string(path);
+
+                match contents {
+                    Ok(contents) => files.push(ProjectFile::new(url, 0, contents)),
+                    Err(why) => {
+                        eprintln!("Failed to read {raw_url}: {why:?}");
+                    }
                 }
             }
+            Err(why) => eprintln!(
+                "Failed to construct URL: {why:?} (path was {})",
+                path.to_str().unwrap()
+            ),
         }
     }
 
@@ -66,8 +74,11 @@ impl Project {
         )
         .unwrap()
         {
-            if let Ok(entry) = entry {
-                Self::read_project_file(files, &entry.as_path());
+            match entry {
+                Ok(entry) => {
+                    Self::read_project_file(files, &entry.as_path());
+                }
+                Err(why) => eprintln!("Failed to get glob entry: {why:?}"),
             }
         }
     }

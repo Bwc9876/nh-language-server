@@ -1,0 +1,47 @@
+{
+    "name": "new-horizons-configs",
+    "displayName": "New Horizons Configs",
+    "description": "An extension featuring a language server and QoL features for New Horizons addon developers",
+    "publisher": "bwc9876",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.79.0"
+    },
+    "repository": {
+        "url": "https://github.com/Bwc9876/nh-language-server"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "workspaceContains:**/manifest.json"
+    ],
+    "main": "./dist/extension.js",
+    "scripts": {
+        "vscode:prepublish": "pnpm server:compile && pnpm build",
+        "server:compile": "cd server && cargo build --release && cd ..",
+        "package": "pnpm vsce package --no-dependencies",
+        "publish": "pnpm vsce publish --no-dependencies",
+        "compile": "webpack",
+        "watch": "webpack --watch",
+        "build": "webpack --mode production --devtool hidden-source-map",
+        "lint": "eslint src --ext ts",
+        "format": "prettier --write ."
+    },
+    "devDependencies": {
+        "@types/node": "^20.4.1",
+        "@types/vscode": "^1.79.0",
+        "@typescript-eslint/eslint-plugin": "^5.61.0",
+        "@typescript-eslint/parser": "^5.61.0",
+        "eslint": "^8.44.0",
+        "ts-loader": "^9.4.4",
+        "typescript": "^5.1.6",
+        "webpack": "^5.88.1",
+        "webpack-cli": "^5.1.4"
+    },
+    "dependencies": {
+        "eslint-plugin-prettier": "^4.2.1",
+        "prettier": "^3.0.0",
+        "vscode-languageclient": "^8.1.0"
+    }
+}

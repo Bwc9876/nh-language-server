@@ -38,8 +38,7 @@ pub struct Project {
 
 impl Project {
     fn read_project_file(files: &mut ProjectFiles, path: &Path) {
-        let raw_url = format!("file://{}", path.to_str().unwrap());
-        let url = Url::parse(&raw_url);
+        let url = Url::from_file_path(path);
 
         eprintln!("Attempt read {}", path.to_str().unwrap());
 
@@ -50,7 +49,7 @@ impl Project {
                 match contents {
                     Ok(contents) => files.push(ProjectFile::new(url, 0, contents)),
                     Err(why) => {
-                        eprintln!("Failed to read {raw_url}: {why:?}");
+                        eprintln!("Failed to read {url:?}: {why:?}");
                     }
                 }
             }

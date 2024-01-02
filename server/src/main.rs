@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use anyhow::Result;
 use lsp_server::{Connection, Message};
 use lsp_types::{
@@ -25,10 +23,10 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
     let params: InitializeParams = serde_json::from_value(params).unwrap();
     let validator = MainValidator::new();
     if let Some(root_uri) = params.root_uri {
-        let path = urlencoding::decode(root_uri.path()).unwrap().into_owned();
-        eprintln!("Detected Project At {}, Loading...", path);
+        let path = root_uri.to_file_path().unwrap();
+        eprintln!("Detected Project At {}, Loading...", path.to_str().unwrap());
         let mut project = Project::default();
-        project.load_from(&PathBuf::from(path));
+        project.load_from(&path);
         eprintln!("Performing initial validation");
         validator.force_validate(&connection, &mut project);
         eprintln!("Starting main event loop");

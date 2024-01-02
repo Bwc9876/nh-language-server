@@ -1,4 +1,4 @@
-import { window, workspace, ExtensionContext, Uri } from "vscode";
+import { window, workspace, ExtensionContext, Uri, ExtensionMode } from "vscode";
 
 import {
     Executable,
@@ -13,7 +13,8 @@ let client: LanguageClient;
 async function activateServer(context: ExtensionContext) {
 
     const ext = process.platform === "win32" ? ".exe" : "";
-    const bundled = Uri.joinPath(context.extensionUri, "server", "target", "dist", `nh-language-server${ext}`);
+    const mode = context.extensionMode === ExtensionMode.Development ? "debug" : "release";
+    const bundled = Uri.joinPath(context.extensionUri, "server", "target", mode, `nh-language-server${ext}`);
 
     const serverExecutable: Executable = {
         command: bundled.fsPath,

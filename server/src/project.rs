@@ -16,10 +16,7 @@ pub struct ProjectFile {
 impl ProjectFile {
     pub fn new(url: Url, version: i32, contents: String) -> Self {
         Self {
-            id: VersionedTextDocumentIdentifier {
-                uri: url,
-                version: version,
-            },
+            id: VersionedTextDocumentIdentifier { uri: url, version },
             contents,
         }
     }
@@ -76,7 +73,7 @@ impl Project {
         {
             match entry {
                 Ok(entry) => {
-                    Self::read_project_file(files, &entry.as_path());
+                    Self::read_project_file(files, entry.as_path());
                 }
                 Err(why) => eprintln!("Failed to get glob entry: {why:?}"),
             }

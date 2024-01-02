@@ -30,8 +30,8 @@ impl FilePathValidator {
     fn validate_file_or_folder_paths(
         &self,
         project: &Project,
-        files: &Vec<ProjectFile>,
-        json_paths: &Vec<String>,
+        files: &[ProjectFile],
+        json_paths: &[String],
         errors: &mut ErrorSet,
     ) {
         for config in files.iter() {
@@ -75,7 +75,7 @@ impl Validator for FilePathValidator {
         this
     }
 
-    fn should_invalidate(&self, _: &Vec<lsp_types::Url>, __: &Project) -> bool {
+    fn should_invalidate(&self, _: &[lsp_types::Url], _: &Project) -> bool {
         // Any file changes can mean we need to reload, so always return true here
         true
     }

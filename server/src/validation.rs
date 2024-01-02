@@ -14,7 +14,7 @@ pub trait Validator {
     fn prepare() -> Self
     where
         Self: Sized;
-    fn should_invalidate(&self, changed_paths: &Vec<Url>, project: &Project) -> bool;
+    fn should_invalidate(&self, changed_paths: &[Url], project: &Project) -> bool;
     fn validate(&self, project: &Project) -> ErrorSet;
 }
 
@@ -25,10 +25,12 @@ pub struct MainValidator {
 
 impl MainValidator {
     pub fn new() -> Self {
-        let mut this = Self::default();
-        this.validators.push(Box::new(ShipLogValidator::prepare()));
-        this.validators.push(Box::new(FilePathValidator::prepare()));
-        this
+        Self {
+            validators: vec![
+                Box::new(ShipLogValidator::prepare()),
+                Box::new(FilePathValidator::prepare()),
+            ],
+        }
     }
 
     fn internal_emit(connection: &Connection, current_buffer: &ErrorSet) {
@@ -103,8 +105,10 @@ impl MainValidator {
             .iter()
             .filter(|v| v.should_invalidate(&changed_paths, project))
         {
-            errors.extend(validator.validate(&project).into_iter());
+            errors.extend(validator.validate(project).into_iter());
         }
+
+        eprintln!("Validate: {:?}", errors);
 
         let mut uris_with_diagnostics =
             errors.iter().map(|e| e.0.uri.clone()).collect::<Vec<Url>>();

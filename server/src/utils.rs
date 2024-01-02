@@ -86,7 +86,7 @@ pub fn find_paths_with_x_prop(
     paths
 }
 
-pub fn json_path_to_json_pos_path<'a>(path: &'a String) -> Vec<PathType<'a>> {
+pub fn json_path_to_json_pos_path(path: &str) -> Vec<PathType<'_>> {
     let parts = path.split('/').skip(1);
     let output_path = parts
         .into_iter()

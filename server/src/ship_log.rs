@@ -97,7 +97,7 @@ impl ShipLogContext {
         Ok(())
     }
 
-    fn process_duplicate_buffer(errors: &mut ErrorSet, buffer: &Vec<&ID>) {
+    fn process_duplicate_buffer(errors: &mut ErrorSet, buffer: &[&ID]) {
         errors.extend(buffer.iter().map(|id| {
             let message = format!("Duplicate ID: `{}`", id.value);
             (
@@ -127,13 +127,13 @@ impl ShipLogContext {
                 .map(|last_id| id.value == last_id.value)
                 .unwrap_or(false)
             {
-                current_buffer.push(&id);
+                current_buffer.push(id);
             } else {
                 if current_buffer.len() > 1 {
                     Self::process_duplicate_buffer(errors, &current_buffer)
                 }
                 current_buffer.clear();
-                current_buffer.push(&id);
+                current_buffer.push(id);
             }
         }
         if current_buffer.len() > 1 {
@@ -141,11 +141,7 @@ impl ShipLogContext {
         }
     }
 
-    fn validate_curiosity_references(
-        &self,
-        system_files: &Vec<ProjectFile>,
-        errors: &mut ErrorSet,
-    ) {
+    fn validate_curiosity_references(&self, system_files: &[ProjectFile], errors: &mut ErrorSet) {
         // TODO: Fill this out
         const KNOWN_CURIOSITIES: [&str; 0] = [];
 
@@ -169,7 +165,7 @@ impl ShipLogContext {
 
         for reference in self.curiosity_references.iter() {
             if !KNOWN_CURIOSITIES.contains(&reference.value.as_str())
-                && !custom_curiosities.contains(&&reference.value)
+                && !custom_curiosities.contains(&reference.value)
             {
                 let message = format!(
                     "Unknown Curiosity: `{}`. Please define it in a system config",
@@ -239,10 +235,11 @@ impl Validator for ShipLogValidator {
         Self()
     }
 
-    fn should_invalidate(&self, changed_paths: &Vec<Url>, project: &Project) -> bool {
+    fn should_invalidate(&self, changed_paths: &[Url], project: &Project) -> bool {
         project
             .ship_log_files
             .iter()
+            .chain(project.system_files.iter())
             .any(|file| changed_paths.contains(&file.id.uri))
     }
 
@@ -280,9 +277,10 @@ mod tests {
     }
 
     fn get_test_project() -> Project {
-        let mut proj = Project::default();
-        proj.system_files = get_test_file();
-        proj
+        Project {
+            system_files: get_test_file(),
+            ..Default::default()
+        }
     }
 
     #[test]

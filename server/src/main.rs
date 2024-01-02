@@ -25,8 +25,10 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
     let params: InitializeParams = serde_json::from_value(params).unwrap();
     let validator = MainValidator::new();
     if let Some(root_uri) = params.root_uri {
+        let path = urlencoding::decode(root_uri.path()).unwrap().into_owned();
+        eprintln!("Detected Project At {}, Loading...", path);
         let mut project = Project::default();
-        project.load_from(&PathBuf::from(root_uri.path()));
+        project.load_from(&PathBuf::from(path));
         eprintln!("Performing initial validation");
         validator.force_validate(&connection, &mut project);
         eprintln!("Starting main event loop");
@@ -89,11 +91,12 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
 pub fn main() -> Result<()> {
     let (connection, _) = Connection::stdio();
 
-    let mut capabilities = ServerCapabilities::default();
-
-    capabilities.position_encoding = Some(PositionEncodingKind::UTF16);
-    capabilities.workspace = None;
-    capabilities.text_document_sync = Some(TextDocumentSyncKind::FULL.into());
+    let capabilities = ServerCapabilities {
+        position_encoding: Some(PositionEncodingKind::UTF16),
+        workspace: None,
+        text_document_sync: Some(TextDocumentSyncKind::FULL.into()),
+        ..Default::default()
+    };
 
     let server_capabilities = serde_json::to_value(capabilities).unwrap();
     let initialization_params = connection.initialize(server_capabilities)?;

@@ -9,6 +9,7 @@ pub mod error_codes {
     pub const ERROR_SOURCE: &str = "New Horizons";
 
     pub const SHIPLOG_DUPLICATE_ID: &str = "nh.shiplog.duplicate_ids";
+    pub const SHIPLOG_VANILLA_ID: &str = "nh.shiplog.vanilla_id";
     pub const SHIPLOG_MISSING_CURIOSITY: &str = "nh.shiplog.missing_curiosity";
     pub const SHIPLOG_MISSING_SOURCE_ID: &str = "nh.shiplog.invalid_source_id";
 

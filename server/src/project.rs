@@ -10,14 +10,36 @@ use lsp_types::{Url, VersionedTextDocumentIdentifier};
 #[derive(Debug)]
 pub struct ProjectFile {
     pub id: VersionedTextDocumentIdentifier,
+    pub nice_path: PathBuf,
     pub contents: String,
 }
 
 impl ProjectFile {
     pub fn new(url: Url, version: i32, contents: String) -> Self {
+        let nice_path = PathBuf::from(url.path());
         Self {
             id: VersionedTextDocumentIdentifier { uri: url, version },
+            nice_path,
             contents,
+        }
+    }
+
+    pub fn get_relative(&self, root_path: &Path) -> Option<PathBuf> {
+        self.nice_path
+            .strip_prefix(root_path)
+            .ok()
+            .map(|p| p.to_owned())
+    }
+
+    #[cfg(test)]
+    pub fn dummy() -> Self {
+        Self {
+            id: VersionedTextDocumentIdentifier {
+                uri: Url::parse("file:///dev/null").unwrap(),
+                version: 0,
+            },
+            nice_path: PathBuf::from("/dev/null"),
+            contents: "".to_string(),
         }
     }
 }
@@ -38,9 +60,17 @@ pub struct Project {
 
 impl Project {
     fn read_project_file(files: &mut ProjectFiles, path: &Path) {
-        let url = Url::from_file_path(path);
+        let mut path = path
+            .iter()
+            .map(|s| urlencoding::encode(&s.to_str().unwrap()).into_owned())
+            .collect::<PathBuf>()
+            .to_str()
+            .unwrap()
+            .to_string();
+        path = urlencoding::decode(&path).unwrap().into_owned();
+        let url = Url::from_file_path(dbg!(&path));
 
-        eprintln!("Attempt read {}", path.to_str().unwrap());
+        eprintln!("Attempt read {}", path);
 
         match url {
             Ok(url) => {
@@ -53,10 +83,7 @@ impl Project {
                     }
                 }
             }
-            Err(why) => eprintln!(
-                "Failed to construct URL: {why:?} (path was {})",
-                path.to_str().unwrap()
-            ),
+            Err(why) => eprintln!("Failed to construct URL: {why:?} (path was {})", path),
         }
     }
 
@@ -240,5 +267,18 @@ impl Project {
             .chain(&self.ship_log_files)
             .chain(&self.dialogue_files)
             .chain(&self.text_files)
+    }
+
+    pub fn find_all_systems(&self) -> Vec<String> {
+        let mut systems = Vec::with_capacity(self.system_files.len());
+        systems.extend(self.system_files.iter().filter_map(|f| {
+            f.nice_path.file_name().and_then(|s| s.to_str()).map(|s| {
+                s.trim_end_matches(".json")
+                    .trim_end_matches(".jsonc")
+                    .to_string()
+            })
+        }));
+        // TODO: Also read the system names from planets
+        systems
     }
 }

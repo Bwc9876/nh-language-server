@@ -1,5 +1,5 @@
 use anyhow::Result;
-use lsp_server::{Connection, Message};
+use lsp_server::{Connection, Message, Response};
 use lsp_types::{
     notification::{
         DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification,
@@ -9,13 +9,16 @@ use lsp_types::{
     VersionedTextDocumentIdentifier,
 };
 use serde_json::Value;
+use ship_log::ShipLogContext;
 use validation::MainValidator;
 
 use crate::project::Project;
 
 mod file_paths;
+mod planets;
 mod project;
 mod ship_log;
+mod systems;
 mod utils;
 mod validation;
 
@@ -32,11 +35,32 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
         eprintln!("Starting main event loop");
         for msg in &connection.receiver {
             match msg {
-                Message::Request(req) => {
-                    if connection.handle_shutdown(&req)? {
-                        return Ok(());
+                Message::Request(req) => match req.method.as_str() {
+                    "getSystems" => {
+                        let systems = project.find_all_systems();
+                        let response = Response::new_ok(req.id, systems);
+                        connection.sender.send(Message::Response(response))?;
                     }
-                }
+                    "getEntriesForSystem" => {
+                        let ctx = ShipLogContext::from_project(&project);
+                        eprintln!("Received request for entries {}", req.params);
+                        if let Some(system) = req
+                            .params
+                            .as_array()
+                            .and_then(|a| a.get(0))
+                            .and_then(|v| v.as_str())
+                        {
+                            let entries = ctx.get_entries_for_system(system);
+                            let response = Response::new_ok(req.id, entries);
+                            connection.sender.send(Message::Response(response))?;
+                        }
+                    }
+                    _ => {
+                        if connection.handle_shutdown(&req)? {
+                            return Ok(());
+                        }
+                    }
+                },
                 Message::Response(_) => {}
                 Message::Notification(not) => match not.method.as_str() {
                     DidOpenTextDocument::METHOD => {
@@ -58,6 +82,7 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
                     DidChangeTextDocument::METHOD => {
                         let params: DidChangeTextDocumentParams =
                             serde_json::from_value(not.params).unwrap();
+                        dbg!(params.text_document.uri.clone());
                         project.open_file(
                             params.text_document.clone(),
                             &params.content_changes.first().unwrap().text,
